@@ -235,6 +235,7 @@ function runClient() {
   clients=$((clients+1))
   php shell/cache-benchmark.php ops --name '$name' --client \$1 $quiet >> \$results &
 }
+echo "Benchmarking $numClients concurrent clients, each with $numOps operations..."
 start=$(date '+%s')
 BASH;
     $script .= "\n";
@@ -251,10 +252,10 @@ echo "         |   reads|  writes|  cleans"
 echo "------------------------------------"
 awk '
 BEGIN { FS=OFS="|" }
-      { print; for (i=2; i<=NF; ++i) { sum[i] += \$i; total += \$i; } j=NF }
+      { print; for (i=2; i<=NF; ++i) sum[i] += \$i; j=NF }
 END   {
         printf "------------------------------------\\n";
-        printf "%9.2f", total;
+        printf "ops/sec  ";
         for (i=2; i <= j; ++i) printf "%s%8.2f", OFS, sum[i];
       }
 ' \$results
@@ -293,7 +294,7 @@ BASH;
     }
     $elapsed = microtime(true)-$start;
     $progressBar->finish();
-    printf("Loaded %d cache records in %.4f seconds. Total size is %d bytes\n", $i, $elapsed, $size);
+    printf("Loaded %d cache records in %.4f seconds. Data size is %.1fK\n", $i, $elapsed, $size / 1024);
   }
 
   /**
@@ -303,7 +304,7 @@ BASH;
   {
 
     $verbose  = $this->getArg('v') || $this->getArg('verbose');
-    printf('Analyzing current cache contents (please be patient)... ');
+    echo "Analyzing current cache contents...\n";
     $start = microtime(true);
 
     $nTags = $this->_readTags();
@@ -318,10 +319,9 @@ BASH;
     }
 
     $time = microtime(true) - $start;
-    echo sprintf('%d cache IDs and %d cache tags read in %ss', $nEntries, $nTags, $time)."\n";
+    printf("Counted %d cache IDs and %d cache tags in %.4f seconds\n", $nEntries, $nTags, $time);
 
-    echo sprintf('Benchmarking %d cache records with %d tags', $nEntries, $nTags)."\n";
-
+    printf("Benchmarking getIdsMatchingTags...\n");
     $times = $this->_benchmarkByTag($verbose);
 
     $this->_echoAverage($times);
@@ -409,7 +409,7 @@ BASH;
       $totalTime     += $time['time'];
       $totalIdCount  += $time['count'];
     }
-    $this->_echoTime(sprintf('Average for %s tags:', $numTags), $totalTime / $numTags, $totalIdCount / $numTags);
+    printf("Average: %.5f seconds (%5.2f ids per tag)\n", $totalTime / $numTags, $totalIdCount / $numTags);
   }
 
   /**
@@ -432,11 +432,11 @@ BASH;
 
     if ('' === $slowBackend)
     {
-      $this->_println(sprintf('Cache Configuration: single backend %s', $backend));
+      printf("Cache Backend: %s\n", $backend);
     }
     else
     {
-      $this->_println(sprintf('Cache Configuration: fast backend: %s, slow backend: %s', $backend, $slowBackend));
+      printf("Cache Backend: %s + %s\n", $backend, $slowBackend);
     }
   }
 
@@ -579,16 +579,6 @@ BASH;
   }
 
   /**
-   * Display the given string with a trailing newline.
-   *
-   * @param string $msg The string to display
-   */
-  protected function _println($msg)
-  {
-    printf("%s\n", $msg);
-  }
-
-  /**
    * Get the time used for calling getIdsMatchingTags() for every cache tag in
    * the property $_tags.
    * If $verbose is set to true, display detailed statistics for each tag,
@@ -613,15 +603,8 @@ BASH;
       $ids = Mage::app()->getCache()->getIdsMatchingTags(array($tag));
       $end = microtime(true);
       $times[$tag] = array('time' => $end - $start, 'count' => count($ids));
-      if ($verbose)
-      {
-        $this->_echoTime($tag, $times[$tag]['time'], $times[$tag]['count']);
-      }
-      else
-      {
-        if($counter++ % 10 == 0) {
-          $progressBar->update($counter / 10);
-        }
+      if (! $verbose && $counter++ % 10 == 0) {
+        $progressBar->update($counter / 10);
       }
     }
     if (! $verbose)
@@ -629,20 +612,6 @@ BASH;
       $progressBar->finish();
     }
     return $times;
-  }
-
-  /**
-   * Display the given timing statistics.
-   *
-   * @param string $tag The tag
-   * @param float $time The time used to run getIdsMatchingTags() for the tag
-   * @param int $count The number of IDs associated with the tag
-   */
-  protected function _echoTime($tag, $time, $count)
-  {
-    $length = $this->_getLongestTagLength();
-    $pattern = '%-' . $length . 's  (%4s IDs) %ss';
-    $this->_println(sprintf($pattern, $tag, $count, $time));
   }
 
   /**
