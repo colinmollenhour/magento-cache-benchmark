@@ -12,24 +12,20 @@
  * obtain it through the world-wide-web, please send an email
  * to license@magentocommerce.com so we can send you a copy immediately.
  *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade this extension
- * to newer versions in the future.
- *
  * @category   Netzarbeiter
  * @package    Netzarbeiter_Cache
- * @copyright  Copyright (c) 2011 Vinai Kopp http://netzarbeiter.com
+ * @copyright  Copyright (c) 2011 Vinai Kopp http://netzarbeiter.com, Colin Mollenhour http://colin.mollenhour.com
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ *
+ * @author     Vinai Kopp http://netzarbeiter.com, Colin Mollenhour http://colin.mollenhour.com
  */
 
 /**
- * Useage help: php app/code/local/Netzarbeiter/Cache/shell/benchmark.php -- -h
- * This script needs read/write permissions to the magento cache files.
+ * Useage: php shell/cache-benchmark.php [command] [options]
+ * This script needs read/write permissions to the magento cache files
+ * if using a filesystem-based backend.
  */
 
-// use __FILE__ instead of __DIR__ because php 5.3 isn't available everywhere yet
-// This strange require lets the script work from my modman location, too
 require_once 'shell/abstract.php';
 
 class benchmark extends Mage_Shell_Abstract
