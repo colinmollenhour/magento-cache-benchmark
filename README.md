@@ -5,7 +5,7 @@ Thanks Vinai!
 
 ## INSTALLATION
 
-    modman cachebench clone git://github.com/colinmollenhour/magento-cache-benchmark
+    modman cachebench clone git://github.com/colinmollenhour/magento-cache-benchmark.git
 
 ## USAGE
 
@@ -30,7 +30,7 @@ Thanks Vinai!
     Counted 10023 cache IDs and 2005 cache tags in 0.2062 seconds
     Benchmarking getIdsMatchingTags...
     Average: 0.00036 seconds (36.82 ids per tag)
-    Benchmarking 4 concurrent clients, each with 100000 operations.
+    Benchmarking 4 concurrent clients, each with 100000 operations...
     4 concurrent clients completed in 62 seconds
     
              |   reads|  writes|  cleans
