@@ -21,7 +21,7 @@
  */
 
 /**
- * Useage: php shell/cache-benchmark.php [command] [options]
+ * Usage: php shell/cache-benchmark.php [command] [options]
  * This script needs read/write permissions to the magento cache files
  * if using a filesystem-based backend.
  */
