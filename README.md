@@ -8,7 +8,7 @@ Thanks Vinai!
 If you've never used modman before, download and place [modman](http://code.google.com/p/module-manager/)
 in your PATH, and then from the root of your Magento installation run:
 
-    modman init # Only if this is the first time you've used modman
+    modman init
     
 Then:
 
