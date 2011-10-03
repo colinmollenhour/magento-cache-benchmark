@@ -647,13 +647,13 @@ This script will either initialize a new benchmark dataset or run a benchmark.
 Usage:  php -f shell/cache-benchmark.php [command] [options]
 
 Commands:
-  init (See "Initialization options")
-  clean
-  load --name <string>
-  tags
-  ops --name <string> --client <num> [-q|--quiet]
+  init [options]        Initialize a new dataset.
+  load --name <string>  Load an existing dataset.
+  clean                 Flush the cache backend.
+  tags                  Benchmark getIdsMatchingTags method.
+  ops [options]         Execute a pre-generated set of operations on the existing cache.
 
-Initialization options:
+'init' options:
   --name <string>       A unique name for this dataset (default to "default")
   --keys <num>          Number of cache keys (default to 10000)
   --tags <num>          Number of cache tags (default to 2000)
@@ -663,6 +663,11 @@ Initialization options:
   --max-rec-size <num>  The largest size for a record (default 1024)
   --clients <num>       The number of clients for multi-threaded testing (defaults to 4)
   --seed <num>          The random number generator seed (default random)
+
+'ops' options:
+  --name <string>       The dataset to use (from the --name option from init command)
+  --client <num>        Client number (0-n where n is --clients option from init command)
+  -q|--quiet            Be less verbose.
 
 USAGE;
   }
