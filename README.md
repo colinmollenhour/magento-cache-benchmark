@@ -32,22 +32,22 @@ Then:
 
     Cache Backend: Zend_Cache_Backend_Redis
     Loading 'default' test data...
-    Loaded 10000 cache records in 29.1080 seconds. Data size is 5008.9K
+    Loaded 10000 cache records in 16.9125 seconds. Data size is 5009.0K
     Analyzing current cache contents...
-    Counted 10023 cache IDs and 2005 cache tags in 0.2062 seconds
+    Counted 10021 cache IDs and 2005 cache tags in 0.2560 seconds
     Benchmarking getIdsMatchingTags...
-    Average: 0.00036 seconds (36.82 ids per tag)
-    Benchmarking 4 concurrent clients, each with 100000 operations...
-    4 concurrent clients completed in 62 seconds
+    Average: 0.00039 seconds (36.82 ids per tag)
+    Benchmarking 4 concurrent clients, each with 100000 operations.
+    4 concurrent clients completed in 64 seconds
     
              |   reads|  writes|  cleans
     ------------------------------------
-    Client  1| 1811.83|  184.66|    6.81
-    Client  2| 1799.84|  165.29|    6.91
-    Client  3| 1818.90|  165.17|    6.79
-    Client  0| 1790.91|  153.56|    7.40
+    Client  2| 1680.80|  313.59|  380.58
+    Client  1| 1681.22|  318.17|  292.41
+    Client  3| 1664.77|  316.60|  311.62
+    Client  0| 1650.93|  259.28|  361.04
     ------------------------------------
-    ops/sec  | 7221.48|  668.68|   27.91
+    ops/sec  | 6677.72| 1207.64| 1345.65
 
 ## CLI HELP
 
