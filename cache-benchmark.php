@@ -126,7 +126,6 @@ class benchmark extends Mage_Shell_Abstract
     $writeFactor = $this->getArg('write-chance') ?: 1000;
     $cleanFactor = $this->getArg('clean-chance') ?: 5000;
 
-    $data = array();
     $tags = array();
     $lengths = array();
     $reads = array();
@@ -139,6 +138,19 @@ class benchmark extends Mage_Shell_Abstract
     // Generate tags
     $this->_createTagList($numTags);
 
+    $smallestKey = FALSE;
+    $largestKey = 0;
+    $totalKeyData = 0;
+
+    $leastTags = FALSE;
+    $mostTags = 0;
+    $totalTags = 0;
+
+    if( ! ($fp = fopen("$testDir/data.txt", 'w'))) {
+      die("Could not open $testDir/data.txt");
+    }
+    fwrite($fp, "$numKeys\r\n");
+
     // Generate data
     for($i = 0; $i < $numKeys; $i++) {
       if($i % 100 == 0) {
@@ -149,15 +161,16 @@ class benchmark extends Mage_Shell_Abstract
       if($expireAt == 'rand') {
         $expireAt = mt_rand(10, 14400);
       }
-      $data[$key] = array(
+      $data = array(
+        'key' => $key,
         'data' => $this->_getRandomData($minSize, $maxSize),
         'tags' => $this->_getRandomTags($minTags, $maxTags),
         'expires' => $expireAt
       );
 
       // Store length since data length per key will usually be constant
-      $lengths[$key] = strlen($data[$key]['data']);
-      $tags[$key] = $data[$key]['tags'];
+      $lengths[$key] = strlen($data['data']);
+      $tags[$key] = $data['tags'];
 
       // Some keys are read more frequently
       $popularity = mt_rand(1,100);
@@ -170,12 +183,38 @@ class benchmark extends Mage_Shell_Abstract
       for($j = 0; $j < $volatility; $j++) {
         $writes[] = $key;
       }
+
+      // Stats
+      $dataLen = $lengths[$key];
+      if($smallestKey === FALSE || $dataLen < $smallestKey) $smallestKey = $dataLen;
+      if($dataLen > $largestKey) $largestKey = $dataLen;
+      $totalKeyData += $dataLen;
+      $tagCount = count($data['tags']);
+      if($leastTags === FALSE || $tagCount < $leastTags) $leastTags = $tagCount;
+      if($tagCount > $mostTags) $mostTags = $tagCount;
+      $totalTags += $tagCount;
+      fwrite($fp, json_encode($data)."\r\n");
     }
+    fclose($fp);
     $progressBar->finish();
 
     // Dump data
-    file_put_contents("$testDir/data.json", json_encode($data));
-    $data = NULL;
+    $averageKey = $totalKeyData / $numKeys;
+    $averageTags = $totalTags / $numKeys;
+    $description = <<<TEXT
+Total Keys: $numKeys
+Smallest Key Data: $smallestKey
+Largest Key Data: $largestKey
+Average Key Data: $averageKey
+Total Key Data: $totalKeyData
+Total Tags: $numTags
+Least Tags/key: $leastTags
+Most Tags/key: $mostTags
+Average Tags/key: $averageTags
+Total Tags/key: $totalTags
+TEXT;
+    echo "$description\n";
+    file_put_contents("$testDir/description.txt", $description);
 
     echo "Generating operations...\n";
     $progressBar = $this->_getProgressBar(0, ($numClients * $numOps) / 1000);
@@ -271,26 +310,34 @@ BASH;
   {
     $name = $this->getArg('name') ?: 'default';
     $testDir = $this->_getTestDir();
-    $dataFile = "$testDir/data.json";
+    $dataFile = "$testDir/data.txt";
     if( ! file_exists($dataFile)) {
       throw new RuntimeException("The '$name' test data does not exist. Please run the 'init' command.");
     }
+    if( ! ($fp = fopen($dataFile,'r'))) {
+      throw new RuntimeException("Could not open $dataFile");
+    }
     echo "Loading '$name' test data...\n";
-    $data = json_decode(file_get_contents($dataFile), true);
-    $progressBar = $this->_getProgressBar(0, count($data) / 100);
+    $numRecords = rtrim(fgets($fp),"\r\n");
+    $progressBar = $this->_getProgressBar(0, $numRecords / 100);
     $i = 0;
     $start = microtime(true);
     $size = 0;
-    foreach($data as $key => $cache) {
+    $_elapsed = 0.;
+    while($line = fgets($fp)) {
+      $cache = json_decode($line, true);
       if($i++ % 100 == 0) {
         $progressBar->update($i / 100);
       }
       $size += strlen($cache['data']);
-      Mage::app()->saveCache($cache['data'], $key, $cache['tags'], $cache['expires']);
+      $_start = microtime(true);
+      Mage::app()->saveCache($cache['data'], $cache['key'], $cache['tags'], $cache['expires']);
+      $_elapsed += microtime(true) - $_start;
     }
+    fclose($fp);
     $elapsed = microtime(true)-$start;
     $progressBar->finish();
-    printf("Loaded %d cache records in %.4f seconds. Data size is %.1fK\n", $i, $elapsed, $size / 1024);
+    printf("Loaded %d cache records in %.2f seconds (%.4f seconds cache time). Data size is %.1fK\n", $i, $elapsed, $_elapsed, $size / 1024);
   }
 
   /**
