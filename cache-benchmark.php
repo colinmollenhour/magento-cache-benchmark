@@ -504,7 +504,7 @@ BASH;
       $sizeBucket = (int)floor($size / 2048);
       $sizeBuckets[$sizeBucket]++;
       $totalTags += count($meta['tags']);
-      $tagsBucket = (int)floor(count($meta['tags']) / 10);
+      $tagsBucket = (int)floor(count($meta['tags']) / 1);
       $tagsBuckets[$tagsBucket]++;
     }
     $avgSize = round($totalSize / $totalIds / 1024, 2);
@@ -518,14 +518,16 @@ Average Tags: $avgTags
 
 TEXT;
     ksort($sizeBuckets);
+    echo "Under Kb\tCount\n";
     foreach($sizeBuckets as $size => $count) {
       $size *= 2;
-      echo "{$size}Kb    $count\n";
+      echo "{$size}Kb\t$count\n";
     }
     ksort($tagsBuckets);
+    echo "Tags\tCount\n";
     foreach($tagsBuckets as $tags => $count) {
-      $tags *= 10;
-      echo "{$tags} tags    $count\n";
+      $tags *= 1;
+      echo "{$tags} tags\t$count\n";
     }
   }
 
