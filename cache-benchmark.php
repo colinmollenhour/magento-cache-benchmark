@@ -68,6 +68,9 @@ class benchmark extends Mage_Shell_Abstract
     else if($this->getArg('ops')) {
       $this->_runOpsBenchmark();
     }
+    else if($this->getArg('analyze')) {
+      $this->_analyzeCache();
+    }
     else {
       echo $this->usageHelp();
     }
@@ -483,6 +486,49 @@ BASH;
     }
   }
 
+  protected function _analyzeCache()
+  {
+    $backend = Mage::app()->getCache()->getBackend(); /* @var $backend Zend_Cache_Backend_ExtendedInterface */
+
+    $totalSize = 0;
+    $totalTags = 0;
+    $sizeBuckets = array();
+    $tagsBuckets = array();
+    $ids = $backend->getIds();
+    $totalIds = count($ids);
+    foreach($ids as $id) {
+      $data = $backend->load($id);
+      $meta = $backend->getMetadatas($id);
+      $size = strlen($data);
+      $totalSize += $size;
+      $sizeBucket = (int)floor($size / 2048);
+      $sizeBuckets[$sizeBucket]++;
+      $totalTags += count($meta['tags']);
+      $tagsBucket = (int)floor(count($meta['tags']) / 10);
+      $tagsBuckets[$tagsBucket]++;
+    }
+    $avgSize = round($totalSize / $totalIds / 1024, 2);
+    $totalSize = round($totalSize / (1024*1024), 2);
+    $avgTags = $totalTags / $totalIds;
+    echo <<<TEXT
+Total Ids: $totalIds
+Total Size: {$totalSize} Mb
+Average Size: $avgSize Kb
+Average Tags: $avgTags
+
+TEXT;
+    ksort($sizeBuckets);
+    foreach($sizeBuckets as $size => $count) {
+      $size *= 2;
+      echo "{$size}Kb    $count\n";
+    }
+    ksort($tagsBuckets);
+    foreach($tagsBuckets as $tags => $count) {
+      $tags *= 10;
+      echo "{$tags} tags    $count\n";
+    }
+  }
+
   /**
    * Create internal list of cache tags.
    *
@@ -699,6 +745,7 @@ Commands:
   clean                 Flush the cache backend.
   tags                  Benchmark getIdsMatchingTags method.
   ops [options]         Execute a pre-generated set of operations on the existing cache.
+  analyze               Analyze the current cache contents
 
 'init' options:
   --name <string>       A unique name for this dataset (default to "default")
@@ -709,6 +756,7 @@ Commands:
   --min-rec-size <num>  The smallest size for a record (default 1)
   --max-rec-size <num>  The largest size for a record (default 1024)
   --clients <num>       The number of clients for multi-threaded testing (defaults to 4)
+  --ops <num>           The number of operations to perform per client (defaults to 100000)
   --seed <num>          The random number generator seed (default random)
 
 'ops' options:
