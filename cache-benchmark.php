@@ -491,9 +491,11 @@ BASH;
     $backend = Mage::app()->getCache()->getBackend(); /* @var $backend Zend_Cache_Backend_ExtendedInterface */
 
     $totalSize = 0;
-    $totalTags = 0;
+    $totalKeyTags = 0;
+    $totalKeysTag = 0;
     $sizeBuckets = array();
     $tagsBuckets = array();
+    $keysBuckets = array();
     $ids = $backend->getIds();
     $totalIds = count($ids);
     foreach($ids as $id) {
@@ -503,19 +505,30 @@ BASH;
       $totalSize += $size;
       $sizeBucket = (int)floor($size / 2048);
       $sizeBuckets[$sizeBucket]++;
-      $totalTags += count($meta['tags']);
+      $totalKeyTags += count($meta['tags']);
       $tagsBucket = (int)floor(count($meta['tags']) / 1);
       $tagsBuckets[$tagsBucket]++;
     }
+    $ids = NULL;
     $avgSize = round($totalSize / $totalIds / 1024, 2);
     $totalSize = round($totalSize / (1024*1024), 2);
-    $avgTags = $totalTags / $totalIds;
+    $avgTags = $totalKeyTags / $totalIds;
+    $tags = $backend->getTags();
+    $totalTags = count($tags);
+    foreach($tags as $tag) {
+      $tagCount = count($backend->getIdsMatchingAnyTags(array($tag)));
+      $keysBucket = (int)floor($tagCount / 1);
+      $keysBuckets[$keysBucket]++;
+      $totalKeysTag += $tagCount;
+    }
+    $tags = NULL;
+    $avgKeys = round($totalTags / $totalKeysTag, 2);
     echo <<<TEXT
 Total Ids: $totalIds
 Total Size: {$totalSize} Mb
 Average Size: $avgSize Kb
-Average Tags: $avgTags
-
+Average Tags/Key: $avgTags
+Average Keys/Tag: $avgKeys
 TEXT;
     ksort($sizeBuckets);
     echo "Under Kb\tCount\n";
@@ -524,10 +537,16 @@ TEXT;
       echo "{$size}Kb\t$count\n";
     }
     ksort($tagsBuckets);
-    echo "Tags\tCount\n";
+    echo "Tags/Key\tCount\n";
     foreach($tagsBuckets as $tags => $count) {
       $tags *= 1;
       echo "{$tags} tags\t$count\n";
+    }
+    echo "Keys/Tag\tCount\n";
+    ksort($keysBuckets);
+    foreach($keysBuckets as $keys => $count) {
+      $keys *= 1;
+      echo "{$keys} keys\t$count\n";
     }
   }
 
