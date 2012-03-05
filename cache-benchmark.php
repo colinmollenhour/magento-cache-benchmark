@@ -71,6 +71,9 @@ class benchmark extends Mage_Shell_Abstract
     else if($this->getArg('analyze')) {
       $this->_analyzeCache();
     }
+    else if($this->getArg('gz_test')) {
+      $this->_gzTest();
+    }
     else {
       echo $this->usageHelp();
     }
@@ -523,13 +526,13 @@ BASH;
     }
     $tags = NULL;
     $avgKeys = round($totalTags / $totalKeysTag, 2);
-    echo <<<TEXT
-Total Ids: $totalIds
-Total Size: {$totalSize} Mb
-Average Size: $avgSize Kb
-Average Tags/Key: $avgTags
-Average Keys/Tag: $avgKeys
-TEXT;
+    echo "
+Total Ids\t$totalIds
+Total Size\t{$totalSize} Mb
+Average Size\t$avgSize Kb
+Average Tags/Key\t$avgTags
+Average Keys/Tag\t$avgKeys
+";
     ksort($sizeBuckets);
     echo "Under Kb\tCount\n";
     foreach($sizeBuckets as $size => $count) {
@@ -547,6 +550,39 @@ TEXT;
     foreach($keysBuckets as $keys => $count) {
       $keys *= 1;
       echo "{$keys} keys\t$count\n";
+    }
+  }
+
+  protected function _gzTest()
+  {
+    $numChunks = 20480;
+    $chunks = array();
+    for($i = 0; $i < $numChunks; $i++) {
+      $chunks[] = '016_'.sha1(mt_rand(0,$numChunks*10));
+    }
+
+    for($level = 0; $level < 10; $level++) {
+      $len = 0;
+      $gzlen = 0;
+      $compress = 0;
+      $uncompress = 0;
+      for($i = 0; $i < $numChunks; $i = ($i >= 1024 ? $i + 1024 : $i * 2)) {
+        $_tags = implode(',', array_slice($chunks,0,$i));
+        $start = microtime(true);
+        $gztags = gzcompress($_tags, $level);
+        $encode = microtime(true) - $start;
+        $start = microtime(true);
+        $ungztags = gzuncompress($gztags);
+        $decode = microtime(true) - $start;
+        $len += strlen($_tags);
+        $gzlen += strlen($gztags);
+        $compress += $encode;
+        $uncompress += $decode;
+        //printf("Compressed %d tags from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $i, strlen($_tags), strlen($gztags), (strlen($gztags) / strlen($_tags)) * 100., $encode, $decode);
+        if ($ungztags != $_tags) echo "ERROR\n";
+        if( ! $i) $i = 1;
+      }
+      printf("Level %d: %d tags from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $level, $i, $len, $gzlen, ($gzlen / $len) * 100., $compress, $uncompress);
     }
   }
 
@@ -767,6 +803,7 @@ Commands:
   tags                  Benchmark getIdsMatchingTags method.
   ops [options]         Execute a pre-generated set of operations on the existing cache.
   analyze               Analyze the current cache contents
+  gz_test               Test gzip performance
 
 'init' options:
   --name <string>       A unique name for this dataset (default to "default")
