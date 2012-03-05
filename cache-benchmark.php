@@ -526,9 +526,10 @@ BASH;
     }
     $tags = NULL;
     $avgKeys = round($totalTags / $totalKeysTag, 2);
-    echo "
-Total Ids\t$totalIds
+    echo
+"Total Ids\t$totalIds
 Total Size\t{$totalSize} Mb
+Total Tags\t$totalTags
 Average Size\t$avgSize Kb
 Average Tags/Key\t$avgTags
 Average Keys/Tag\t$avgKeys
