@@ -71,8 +71,8 @@ class benchmark extends Mage_Shell_Abstract
     else if($this->getArg('analyze')) {
       $this->_analyzeCache();
     }
-    else if($this->getArg('gz_test')) {
-      $this->_gzTest();
+    else if($this->getArg('comp_test')) {
+      $this->_compTest();
     }
     else {
       echo $this->usageHelp();
@@ -128,7 +128,7 @@ class benchmark extends Mage_Shell_Abstract
     if($this->getArg('seed')) {
       mt_srand( (int) $this->getArg('seed'));
     }
-    $numOps = $this->getArg('ops') ?: 100000;
+    $numOps = $this->getArg('ops') ?: 50000;
     $writeFactor = $this->getArg('write-chance') ?: 1000;
     $cleanFactor = $this->getArg('clean-chance') ?: 5000;
 
@@ -554,37 +554,102 @@ Average Keys/Tag\t$avgKeys
     }
   }
 
-  protected function _gzTest()
+  protected function _compTest()
   {
-    $numChunks = 20480;
+    $numChunks = 10240;
     $chunks = array();
     for($i = 0; $i < $numChunks; $i++) {
       $chunks[] = '016_'.sha1(mt_rand(0,$numChunks*10));
     }
 
-    for($level = 0; $level < 10; $level++) {
-      $len = 0;
-      $gzlen = 0;
-      $compress = 0;
-      $uncompress = 0;
-      for($i = 0; $i < $numChunks; $i = ($i >= 1024 ? $i + 1024 : $i * 2)) {
-        $_tags = implode(',', array_slice($chunks,0,$i));
-        $start = microtime(true);
-        $gztags = gzcompress($_tags, $level);
-        $encode = microtime(true) - $start;
-        $start = microtime(true);
-        $ungztags = gzuncompress($gztags);
-        $decode = microtime(true) - $start;
-        $len += strlen($_tags);
-        $gzlen += strlen($gztags);
-        $compress += $encode;
-        $uncompress += $decode;
-        //printf("Compressed %d tags from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $i, strlen($_tags), strlen($gztags), (strlen($gztags) / strlen($_tags)) * 100., $encode, $decode);
-        if ($ungztags != $_tags) echo "ERROR\n";
-        if( ! $i) $i = 1;
-      }
-      printf("Level %d: %d tags from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $level, $i, $len, $gzlen, ($gzlen / $len) * 100., $compress, $uncompress);
+    switch($this->getArg('lib')) {
+      case 'snappy':
+        $compress = 'snappy_compress';
+        $decompress = 'snappy_uncompress';
+        break;
+      case 'lzf':
+        $compress = 'lzf_compress';
+        $decompress = 'lzf_decompress';
+        break;
+      case 'gzip':
+        $compress = array($this,'gzcompress');
+        $decompress = 'gzuncompress';
+        break;
+      default:
+        die("Please specify a lib with --lib. Options are: snappy, lzf, gzip\n");
     }
+    if( ! function_exists($decompress)) {
+      echo "The function $decompress does not exist.\n";
+      exit;
+    }
+
+    echo "Testing compression with {$this->getArg('lib')}\n";
+    $len = 0;
+    $zlen = 0;
+    $compressTime = 0;
+    $decompressTime = 0;
+    for($i = 0; $i < $numChunks; $i = ($i >= 1024 ? $i + 4096 : $i * 3)) {
+      $string = implode(',', array_slice($chunks,0,$i));
+      $start = microtime(true);
+      $zstring = call_user_func($compress, $string);
+      $encode = microtime(true) - $start;
+      $start = microtime(true);
+      $ungztags = call_user_func($decompress, $zstring);
+      $decode = microtime(true) - $start;
+      $len += strlen($string);
+      $zlen += strlen($zstring);
+      $compressTime += $encode;
+      $decompressTime += $decode;
+      printf("random from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", strlen($string), strlen($zstring), (strlen($zstring) / strlen($string)) * 100., $encode, $decode);
+      if ($ungztags != $string) echo "ERROR\n";
+      if( ! $i) $i = 1;
+    }
+    foreach(array(
+      './app/code/core/Mage/Core/etc/system.xml',
+      './app/code/core/Mage/Catalog/etc/system.xml',
+      './app/code/core/Mage/Sales/etc/system.xml',
+      './app/code/core/Mage/Core/etc/config.xml',
+      './app/code/core/Mage/Catalog/etc/config.xml',
+      './app/code/core/Mage/Sales/etc/config.xml',
+      './app/design/frontend/base/default/template/catalog/product/view.phtml',
+      './app/design/frontend/base/default/template/catalog/product/list.phtml',
+      './app/design/frontend/base/default/template/page/3columns.phtml',
+    ) as $xmlFile) {
+      $string = file_get_contents($xmlFile);
+      $start = microtime(true);
+      $zstring = call_user_func($compress, $string);
+      $encode = microtime(true) - $start;
+      $start = microtime(true);
+      $ungztags = call_user_func($decompress, $zstring);
+      $decode = microtime(true) - $start;
+      $len += strlen($string);
+      $zlen += strlen($zstring);
+      $compressTime += $encode;
+      $decompressTime += $decode;
+      printf("%s from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $xmlFile, strlen($string), strlen($zstring), (strlen($zstring) / strlen($string)) * 100., $encode, $decode);
+      if ($ungztags != $string) echo "ERROR\n";
+    }
+    foreach(array('Mage::app()->getConfig()') as $xmlFile) {
+      $string = Mage::app()->getConfig()->getNode()->asXML();
+      $start = microtime(true);
+      $zstring = call_user_func($compress, $string);
+      $encode = microtime(true) - $start;
+      $start = microtime(true);
+      $ungztags = call_user_func($decompress, $zstring);
+      $decode = microtime(true) - $start;
+      $len += strlen($string);
+      $zlen += strlen($zstring);
+      $compressTime += $encode;
+      $decompressTime += $decode;
+      printf("%s from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $xmlFile, strlen($string), strlen($zstring), (strlen($zstring) / strlen($string)) * 100., $encode, $decode);
+      if ($ungztags != $string) echo "ERROR\n";
+    }
+    printf("Total: from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $len, $zlen, ($zlen / $len) * 100., $compressTime, $decompressTime);
+  }
+
+  protected function gzcompress($data)
+  {
+    return gzcompress($data,1);
   }
 
   /**
@@ -804,7 +869,7 @@ Commands:
   tags                  Benchmark getIdsMatchingTags method.
   ops [options]         Execute a pre-generated set of operations on the existing cache.
   analyze               Analyze the current cache contents
-  gz_test               Test gzip performance
+  comp_test             Test compression library performance
 
 'init' options:
   --name <string>       A unique name for this dataset (default to "default")
@@ -822,6 +887,9 @@ Commands:
   --name <string>       The dataset to use (from the --name option from init command)
   --client <num>        Client number (0-n where n is --clients option from init command)
   -q|--quiet            Be less verbose.
+
+'comp_test' options:
+  --lib <string>        One of snappy, lzf, gzip
 
 USAGE;
   }
