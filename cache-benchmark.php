@@ -600,7 +600,7 @@ Average Keys/Tag\t$avgKeys
       $zlen += strlen($zstring);
       $compressTime += $encode;
       $decompressTime += $decode;
-      printf("random from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", strlen($string), strlen($zstring), (strlen($zstring) / strlen($string)) * 100., $encode, $decode);
+      printf("random from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", strlen($string), strlen($zstring), ((strlen($string) - strlen($zstring)) / strlen($string)) * 100., $encode, $decode);
       if ($ungztags != $string) echo "ERROR\n";
       if( ! $i) $i = 1;
     }
@@ -626,7 +626,7 @@ Average Keys/Tag\t$avgKeys
       $zlen += strlen($zstring);
       $compressTime += $encode;
       $decompressTime += $decode;
-      printf("%s from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $xmlFile, strlen($string), strlen($zstring), (strlen($zstring) / strlen($string)) * 100., $encode, $decode);
+      printf("%s from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $xmlFile, strlen($string), strlen($zstring), ((strlen($string) - strlen($zstring)) / strlen($string)) * 100., $encode, $decode);
       if ($ungztags != $string) echo "ERROR\n";
     }
     foreach(array('Mage::app()->getConfig()') as $xmlFile) {
@@ -641,10 +641,10 @@ Average Keys/Tag\t$avgKeys
       $zlen += strlen($zstring);
       $compressTime += $encode;
       $decompressTime += $decode;
-      printf("%s from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $xmlFile, strlen($string), strlen($zstring), (strlen($zstring) / strlen($string)) * 100., $encode, $decode);
+      printf("%s from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $xmlFile, strlen($string), strlen($zstring), ((strlen($string) - strlen($zstring)) / strlen($string)) * 100., $encode, $decode);
       if ($ungztags != $string) echo "ERROR\n";
     }
-    printf("Total: from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $len, $zlen, ($zlen / $len) * 100., $compressTime, $decompressTime);
+    printf("Total: from %d bytes to %d bytes (%2.4f%%) in %.6f seconds / %.6f seconds\n", $len, $zlen, (($len - $zlen) / $len) * 100., $compressTime, $decompressTime);
   }
 
   protected function gzcompress($data)

@@ -12,7 +12,7 @@ in your PATH, and then from the root of your Magento installation run:
     
 Then:
 
-    modman cachebench clone git://github.com/colinmollenhour/magento-cache-benchmark.git
+    modman clone git://github.com/colinmollenhour/magento-cache-benchmark.git
 
 ## USAGE
 
