@@ -27,6 +27,7 @@
  */
 
 require_once 'shell/abstract.php';
+ini_set('memory_limit','1024M');  // Needs lots of memory for generating larger datasets
 
 class benchmark extends Mage_Shell_Abstract
 {
