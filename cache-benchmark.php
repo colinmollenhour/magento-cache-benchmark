@@ -130,7 +130,7 @@ class benchmark extends Mage_Shell_Abstract
     }
     $numOps = $this->getArg('ops') ?: 50000;
     $writeFactor = $this->getArg('write-chance') ?: 1000;
-    $cleanFactor = $this->getArg('clean-chance') ?: 5000;
+    $cleanFactor = $this->getArg('clean-chance') ?: 1000;
 
     $tags = array();
     $lengths = array();
@@ -267,7 +267,7 @@ if [ "$1" != "keep" ]; then
   php shell/cache-benchmark.php clean
   php shell/cache-benchmark.php load --name '$name'
 fi
-php shell/cache-benchmark.php tags
+#php shell/cache-benchmark.php tags
 results=var/cachebench/$name/results.txt
 rm -f \$results
 
