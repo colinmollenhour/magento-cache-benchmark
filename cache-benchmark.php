@@ -263,10 +263,9 @@ TEXT;
     $quiet = $numClients == 1 ? '':'--quiet';
     $script = <<<BASH
 #!/bin/bash
-if [ "$1" != "keep" ]; then
-  php shell/cache-benchmark.php clean
-  php shell/cache-benchmark.php load --name '$name'
-fi
+QUIET='--quiet'; if [ -t 1 ]; then QUIET=''; fi
+php shell/cache-benchmark.php clean
+php shell/cache-benchmark.php load --name '$name' \$QUIET
 #php shell/cache-benchmark.php tags
 results=var/cachebench/$name/results.txt
 rm -f \$results
@@ -274,7 +273,7 @@ rm -f \$results
 clients=0
 function runClient() {
   clients=$((clients+1))
-  php shell/cache-benchmark.php ops --name '$name' --client \$1 $quiet >> \$results &
+  php shell/cache-benchmark.php ops --name '$name' --client \$1 $quiet \$QUIET >> \$results &
 }
 echo "Benchmarking $numClients concurrent clients, each with $numOps operations..."
 start=$(date '+%s')
@@ -314,6 +313,7 @@ BASH;
    */
   protected function _loadDataset()
   {
+    $quiet  = $this->getArg('q') || $this->getArg('quiet');
     $name = $this->getArg('name') ?: 'default';
     $testDir = $this->_getTestDir();
     $dataFile = "$testDir/data.txt";
@@ -323,16 +323,16 @@ BASH;
     if( ! ($fp = fopen($dataFile,'r'))) {
       throw new RuntimeException("Could not open $dataFile");
     }
-    echo "Loading '$name' test data...\n";
+    echo "Loading $name test data...\n";
     $numRecords = rtrim(fgets($fp),"\r\n");
-    $progressBar = $this->_getProgressBar(0, $numRecords / 100);
+    if(!$quiet) $progressBar = $this->_getProgressBar(0, $numRecords / 100);
     $i = 0;
     $start = microtime(true);
     $size = 0;
     $_elapsed = 0.;
     while($line = fgets($fp)) {
       $cache = json_decode($line, true);
-      if($i++ % 100 == 0) {
+      if(!$quiet && $i++ % 100 == 0) {
         $progressBar->update($i / 100);
       }
       $size += strlen($cache['data']);
@@ -342,7 +342,7 @@ BASH;
     }
     fclose($fp);
     $elapsed = microtime(true)-$start;
-    $progressBar->finish();
+    if(!$quiet) $progressBar->finish();
     printf("Loaded %d cache records in %.2f seconds (%.4f seconds cache time). Data size is %.1fK\n", $i, $elapsed, $_elapsed, $size / 1024);
   }
 
