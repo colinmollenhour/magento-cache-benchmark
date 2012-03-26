@@ -333,9 +333,10 @@ BASH;
     $_elapsed = 0.;
     while($line = fgets($fp)) {
       $cache = json_decode($line, true);
-      if(!$quiet && $i++ % 100 == 0) {
+      if(!$quiet && $i % 100 == 0) {
         $progressBar->update($i / 100);
       }
+      $i++;
       $size += strlen($cache['data']);
       $_start = microtime(true);
       Mage::app()->saveCache($cache['data'], $cache['key'], $cache['tags'], $cache['expires']);
