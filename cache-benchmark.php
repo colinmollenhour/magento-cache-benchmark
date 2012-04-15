@@ -527,7 +527,7 @@ BASH;
       $totalKeysTag += $tagCount;
     }
     $tags = NULL;
-    $avgKeys = round($totalTags / $totalKeysTag, 2);
+    $avgKeys = round($totalKeysTag / $totalTags, 2);
     echo
 "Total Ids\t$totalIds
 Total Size\t{$totalSize} Mb
