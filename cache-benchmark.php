@@ -472,9 +472,10 @@ BASH;
     $realBackend = Mage::app()->getCache()->getBackend();
     $slowBackend = (string) Mage::getConfig()->getNode('global/cache/slow_backend');
 
-    if ('' === $backend)
+    $backendClass = get_class($realBackend);
+    if ($backendClass !== $backend)
     {
-      $backend = get_class($realBackend);
+      $backend = "$backend ($backendClass)";
     }
     if ($realBackend instanceof Zend_Cache_Backend_TwoLevels && '' === $slowBackend)
     {
